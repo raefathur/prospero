@@ -28,6 +28,7 @@ RUN composer install \
     --no-dev \
     --no-interaction \
     --prefer-dist \
+    --no-scripts \
     --optimize-autoloader
 
 
@@ -52,6 +53,8 @@ COPY --from=vendor /app/vendor ./vendor
 COPY . .
 
 COPY --from=frontend /app/public/build ./public/build
+
+RUN php artisan package:discover --ansi
 
 RUN chown -R www-data:www-data \
     storage \
