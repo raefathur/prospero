@@ -1,13 +1,26 @@
-FROM dunglas/frankenphp:php8.3
+# ==========================================
+# 1. Build React / Vite assets
+# ==========================================
+FROM node:22-alpine AS frontend
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y git unzip libicu-dev libzip-dev \
-    && docker-php-ext-install intl zip \
-    && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN npm ci
+
+COPY resources ./resources
+COPY vite.config.js ./
+
+RUN npm run build
+
+
+# ==========================================
+# 2. Install Laravel dependencies
+# ==========================================
+FROM composer:2 AS vendor
+
+WORKDIR /app
 
 COPY composer.json composer.lock ./
 
@@ -17,15 +30,32 @@ RUN composer install \
     --prefer-dist \
     --optimize-autoloader
 
-COPY package.json package-lock.json ./
 
-RUN npm install
+# ==========================================
+# 3. Final Laravel + FrankenPHP image
+# ==========================================
+FROM dunglas/frankenphp:php8.3
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y \
+        libicu-dev \
+        libzip-dev \
+    && docker-php-ext-install \
+        intl \
+        zip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=vendor /app/vendor ./vendor
 
 COPY . .
 
-RUN npm run build
+COPY --from=frontend /app/public/build ./public/build
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN chown -R www-data:www-data \
+    storage \
+    bootstrap/cache
 
 ENV SERVER_NAME=:80
 
