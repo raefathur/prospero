@@ -45,7 +45,7 @@ function ProsperoTeams() {
         {
             name: 'Rian Ardiansah Makatita, S.T.',
             fullName: 'Junior Consultant',
-            image: '/images/teams/Rian.png',
+            image: '/images/teams/rian.png',
         },
         {
             name: 'Nurul Khamidah, S.E.',
